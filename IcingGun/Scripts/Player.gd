@@ -7,7 +7,7 @@ const JUMP_FORCE = 30
 const ACCEL = 1
 const MAX_BULLET_STRENGTH = 1
 
-var max_speed = DEFAULT_MAX_SPEED
+var slowndown := 1.0
 var facing = Vector2(1,0)
 var bullet_direction = Vector2()
 var bullet_strength = 0
@@ -28,10 +28,10 @@ func _physics_process(delta):
 	if(Input.is_action_just_pressed("shoot")):
 		if can_shoot && equiped_ammo != null && !bullet:
 			shoot(equiped_ammo)
-		elif can_shoot && equiped_ammo != null && (equiped_ammo.is_in_group("locked")):
-			if bullet.rotation_degrees == -90 && facing.x != 1:
+		elif can_shoot && equiped_ammo != null && (bullet.is_in_group("locked")):
+			if cos(bullet.rotation) > 0 && facing.x != 1:
 				shoot(equiped_ammo)
-			elif bullet.rotation_degrees == 90 && facing.x != -1:
+			elif cos(bullet.rotation) < 0 && facing.x != -1:
 				shoot(equiped_ammo)
 	
 	motion.y += get_parent().GRAVITY/2 * pow(delta * 45,2)
@@ -50,7 +50,7 @@ func _physics_process(delta):
 		if bullet:
 			if bullet.locked == true:
 				motion.x += ACCEL
-				max_speed = bullet.get_player_max_speed(DEFAULT_MAX_SPEED)
+				slowndown = bullet.get_slowdown()
 			else:
 				motion.x += ACCEL
 				facing.x = 1
@@ -61,9 +61,9 @@ func _physics_process(delta):
 		if bullet:
 			if bullet.locked == true:
 				motion.x -= ACCEL
-				max_speed = bullet.get_player_max_speed(DEFAULT_MAX_SPEED)
+				slowndown = bullet.get_slowdown()
 			else:
-				max_speed = DEFAULT_MAX_SPEED
+				slowndown = 1
 				motion.x -= ACCEL
 				facing.x = -1
 		else:
@@ -71,7 +71,7 @@ func _physics_process(delta):
 			facing.x = -1
 	else:
 		motion.x = lerp(motion.x, 0, 0.2)
-	motion.x = clamp(motion.x, -max_speed, max_speed)
+	motion.x = clamp(motion.x, -DEFAULT_MAX_SPEED*slowndown, DEFAULT_MAX_SPEED*slowndown)
 	
 	if is_on_floor():
 		if (Input.is_action_just_pressed("jump")):
@@ -89,7 +89,7 @@ func _physics_process(delta):
 		get_tree().reload_current_scene()
 
 func shoot(ammo):
-	if ammo == popping_candy:
+	if ammo == icing_gun:
 		if bullet:
 			bullet.queue_free()
 	if can_shoot:
